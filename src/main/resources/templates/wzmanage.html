@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>物资管理</title>
+    <link rel="stylesheet" href="layui/css/layui.css"  media="all">
+    <script src="layui/layui.js" charset="utf-8"></script>
+    <script src="js/jquery-3.4.1.min.js" charset="utf-8"></script>
+
+    <style>
+        #content{
+            border: none;
+            width: 100%;
+            height: 98%;
+            margin-top: 20px;
+        }
+        /*覆盖原来的部分样式*/
+        .layui-layout-admin .layui-body ,.layui-layout-admin .layui-side{
+            top: 0;
+        }
+
+    </style>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+    <!--<div class="layui-header">-->
+        <!--<div id="show_tip" class="layui-logo">物资管理</div>-->
+    <!--</div>-->
+
+    <div class="layui-side layui-bg-black">
+        <div class="layui-side-scroll">
+            <!-- 左侧导航区域（可配合layui已有的垂直导航） -->
+            <ul id="menu_left" class="layui-nav layui-nav-tree"  lay-filter="test">
+                <li class="layui-nav-item layui-this" data-src="index" data-tip="物资管理">
+                    <a class="" href="javascript:;">物资管理</a>
+                </li>
+                <li class="layui-nav-item" data-src="storageDetailList" data-tip="入库明细">
+                    <a href="javascript:;">入库明细</a>
+                </li>
+                <li class="layui-nav-item" data-src="useDetailList" data-tip="领用明细">
+                    <a href="javascript:;">领用明细</a>
+                </li>
+                <li class="layui-nav-item" data-src="monthStatisticList" data-tip="月统计">
+                    <a href="javascript:;">月统计</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body" style="overflow:hidden;">
+        <iframe id="content" src="index"></iframe>
+    </div>
+</div>
+<script>
+    //JavaScript代码区域
+    layui.use('element', function(){
+        var element = layui.element;
+
+    });
+    $("#menu_left li").on("click",function(){
+        var address =$(this).attr("data-src");
+        $("#content").attr("src",address);
+
+        // var tip = $(this).attr("data-tip");
+        // $("#show_tip").html(tip);
+    });
+</script>
+</body>
+</html>

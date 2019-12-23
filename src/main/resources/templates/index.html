@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>物料管理</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="stylesheet" href="layui/css/layui.css"  media="all">
+
+	<style>
+		.layui-input,.layui-btn{
+			height:25px;
+			line-height:25px;
+            width:250px;
+            display: inline;
+		}
+        .btn{
+            background:#00837E;
+            border-radius:2px;
+            color:#fff;
+            display:inline-block;
+            text-align:center;
+            text-decoration:none;
+            height:28px;
+            line-height:28px;
+            margin-left:10px;
+        }
+
+        .btn1{
+            width:65px;
+        }
+
+        .btn2{
+            width:57px;
+        }
+
+        .btn:hover {
+            background:#3AAB9C;
+        }
+
+        a{
+            font-weight: bold;
+            margin-right:15px;
+        }
+        .table_1{
+            border-collapse: separate;
+            border-spacing: 15px;
+            margin-left: 50px;
+        }
+
+        .desc_pro_use_select,.desc_pro_use_input,.desc_pro_repeat_select,.desc_pro_repeat_input{
+            width: 160px;
+            height: 25px;
+            border-color: #E6E6E6;
+        }
+	</style>
+
+</head>
+
+<body>
+    <div style="margin-left: 20px;">
+        <!--需求单位：<input class="layui-input" type="text" id="org" />-->
+        物料描述：<input class="layui-input" type="text" id="disc" />
+        <a href="javascript:void(0);" class="btn btn2"  onclick="research();">查询</a>
+        <a href="javascript:void(0);" class="btn btn1"  onclick="multiImport();">批量入库</a>
+        <a href="javascript:void(0);" class="btn btn1"  onclick="multiUse();">批量领用</a>
+        <a href="javascript:void(0);" class=""  onclick="downExcelModel('storage');">批量入库模板下载</a>
+        <a href="javascript:void(0);" class=""  onclick="downExcelModel('use');">批量领用模板下载</a>
+    </div>
+
+    <div class="layui-form" style="margin:10px;">
+        <table class="layui-table">
+            <colgroup>
+                <col width="10">
+                <col width="600">
+                <col width="200">
+                <col width="600">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>物资描述</th>
+                    <th>当前库存</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="datas">
+
+            </tbody>
+        </table>
+    </div>
+    <div style="float:right;">
+        <div id="pageBar"></div>
+    </div>
+
+    <!-------------------------------入库------------------------------------>
+    <div id="storage" style="margin-left: 20px;display:none;">
+        <div style="margin:10px;">
+            <table class="table_1">
+                <tr>
+                    <td>物料描述：</td>
+                    <td id="desc_wz"></td>
+                </tr>
+                <tr>
+                    <td>项目名称：</td>
+                    <td><input class="layui-input desc_pro" type="text"/></td>
+                </tr>
+                <tr>
+                    <td>需求人：</td>
+                    <td><input class="layui-input user" type="text" /></td>
+                </tr>
+                <tr>
+                    <td>库存数：</td>
+                    <td id="stock"></td>
+                </tr>
+                <tr>
+                    <td>新入库数：</td>
+                    <td><input class="layui-input count" type="text" /></td>
+                </tr>
+                <tr><td colspan="2" align="right"><a href="javascript:void(0);" class="btn btn2" onclick="submitStorage();">提交</a></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-------------------------------领用------------------------------------>
+    <div id="wz_use" style="margin-left: 20px;display:none;">
+        <div style="margin:10px;">
+            <table class="table_1">
+                <tr>
+                    <td>物料描述：</td>
+                    <td id="desc_wz_use"></td>
+                </tr>
+                <tr>
+                    <td>项目名称：</td>
+                    <!--<td><input class="layui-input desc_pro_use" type="text"/></td>-->
+                    <td>
+                        <input type="radio" name="choose_type_use" value="1" checked="checked" />选择
+                        <input type="radio" name="choose_type_use" value="2" />输入
+                        <span class="type_select_use">
+                            <select class="desc_pro_use_select" style="">
+
+                            </select>
+                        </span>
+                        <span class="type_input_use" style="display: none;">
+                            <input class="layui-input desc_pro_use_input" type="text" />
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>领用人：</td>
+                    <td><input class="layui-input user_use" type="text" /></td>
+                </tr>
+                <tr>
+                    <td>库存数：</td>
+                    <td id="stock_use"></td>
+                </tr>
+                <tr>
+                    <td>领用数量：</td>
+                    <td><input class="layui-input count_use" type="text" /></td>
+                </tr>
+                <tr><td colspan="2" align="right"><a href="javascript:void(0);" class="btn btn2" onclick="submitUse();">提交</a></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-------------------------------重复利用------------------------------------>
+    <div id="repeat_use" style="margin-left: 20px;display:none;">
+        <div style="margin:10px;">
+            <table class="table_1">
+                <tr style="display: none;">
+                    <td id="stock_repeat"></td>
+                </tr>
+                <tr>
+                    <td>物料描述：</td>
+                    <td id="desc_wz_repeat"></td>
+                </tr>
+                <tr>
+                    <td>项目名称：</td>
+                    <!--<td><input class="layui-input desc_pro_repeat" type="text"/></td>-->
+                    <td>
+                        <input type="radio" name="choose_type_repeat" value="1" checked="checked" />选择
+                        <input type="radio" name="choose_type_repeat" value="2" />输入
+                        <span class="type_select_repeat">
+                            <select class="desc_pro_repeat_select" style="">
+
+                            </select>
+                        </span>
+                        <span class="type_input_repeat" style="display: none;">
+                            <input class="layui-input desc_pro_repeat_input" type="text" />
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>操作人：</td>
+                    <td><input class="layui-input user_repeat" type="text" /></td>
+                </tr>
+                <tr>
+                    <td>数量：</td>
+                    <td><input class="layui-input count_repeat" type="text" /></td>
+                </tr>
+                <tr><td colspan="2" align="right"><a href="javascript:void(0);" class="btn btn2" onclick="submitRepeat();">提交</a></td></tr>
+            </table>
+        </div>
+    </div>
+
+    <script src="layui/layui.js" charset="utf-8"></script>
+    <script src="js/jquery-3.4.1.min.js" charset="utf-8"></script>
+    <!-- 注意：如果你直接复制所有代码到本地，上述js路径需要改成你本地的 -->
+    <script>
+        //存放所有的数据，假分页用到
+        var dataArr = new Array();
+        var pageSize = 15;
+        var total = 0;
+        var begin = 0;
+
+        //保存所有项目
+        var projectArr = new Array();
+
+        var index_storage;
+        var index_use;
+
+        var index_1;//重复利用
+        var index_2;//领用
+        var index_3;//入库
+
+        var laypage;
+
+        var wz_name = "";//物资名称，提供给弹出框使用
+
+        //验证非负数
+        var check= /^\d+(\.{0,1}\d+){0,1}$/;
+
+        //渲染文件上传组件
+        layui.use(['laypage', 'layer','upload'], function(){
+          var $ = layui.jquery;
+          laypage = layui.laypage;
+
+            research();
+        });
+
+        //查询
+        function research(){
+            // var org = $("#org").val();
+            var org = "";
+            var disc = $("#disc").val();
+            $.ajax({
+                url: 'query/queryIndex',
+                type:'post',
+                data: {"org":org,"desc_wz":disc},
+                success: function(result){
+                    result = eval("("+result+")");
+                    dataArr = result.data;
+                    total = dataArr.length;
+                    //展示数据
+                    showData(1);
+                    //展示分页
+                    showPageBar();
+                }
+            });
+        }
+
+        //展示分页
+        function showPageBar(){
+            laypage.render({
+                elem: 'pageBar'
+                ,count: total //数据总数
+                ,limit: pageSize //每页数据量
+                ,jump: function(obj){
+                    //点击分页按钮
+                    showData(obj.curr);
+                }
+            });
+        }
+
+        //分页展示数据,page:当前页数
+        function showData(page){
+            begin = (page-1) * pageSize;
+            var arr = dataArr.slice(begin,begin + pageSize);
+            var html = "";
+            $.each(arr,function(i,obj){
+                html += "<tr>";
+                    html += "<td>"+ (i+1) +"</td>";
+                    html += "<td>"+ obj.WZ_NAME +"</td>";
+                    html += "<td>"+ obj.WZ_STOCK + obj.UNIT +"</td>";
+                    var objstr = JSON.stringify(obj);
+                    var opt_1 = "<a href='javascript:void(0);' onclick='showdetail("+objstr+");'><img src='images/detail.png' />明细</a>";
+                    var opt_2 = "<a href='javascript:void(0);' onclick='repeat("+objstr+");'><img src='images/repeat.png' />重复利用</a>";
+                    var opt_3 = "<a href='javascript:void(0);' onclick='use("+objstr+");'><img src='images/use.png' />领用</a>";
+                    var opt_4 = "<a href='javascript:void(0);' onclick='storage("+objstr+");'><img src='images/storage.png' />入库</a>";
+                    html += "<td>"+opt_1+opt_2+opt_3+opt_4+"</td>";
+                html += "</tr>";
+            });
+            if(arr.length==0){
+                html = "<tr><td colspan='4' align='center'>暂无数据</td></tr>";
+            }
+            $("#datas").html(html);
+        }
+
+        function multiImport(){
+            index_storage = layer.open({
+                type: 2,
+                skin: 'layui-layer-demo', //样式类名
+                title: '批量入库',
+                closeBtn: 1,
+                anim: 2,
+                area: ['1500px', '800px'],
+                shadeClose: false, //开启遮罩关闭
+                content: './uploadExcel'
+            });
+        }
+
+        function multiUse(){
+            index_use = layer.open({
+                type: 2,
+                skin: 'layui-layer-demo', //样式类名
+                title: '批量领用',
+                closeBtn: 1,
+                anim: 2,
+                area: ['1500px', '800px'],
+                shadeClose: false, //开启遮罩关闭
+                content: './multiUse'
+            });
+        }
+//---------------------入库------------------------------
+        //入库操作
+        function storage(info){
+            $("#desc_wz").html(info.WZ_NAME);
+            $("#stock").html(info.WZ_STOCK);
+
+            index_3 = layer.open({
+                type: 1,
+                skin: 'layui-layer-demo', //样式类名
+                title: '入库',
+                closeBtn: 1,
+                anim: 2,
+                area: ['600px', '350px'],
+                shadeClose: false, //开启遮罩关闭
+                content: $("#storage").html()
+            });
+        }
+        //提交入库数据
+        function submitStorage(){
+            var desc_wz = $("#desc_wz").text();
+            var desc_pro = $(".desc_pro").eq(1).val();
+            var user =  $(".user").eq(1).val();
+            var stock =  $("#stock").text();
+            var count =  $(".count").eq(1).val();
+
+            if(desc_pro==''){
+                layer.open({
+                    title: '提示'
+                    ,content: '项目不能为空'
+                });
+                return false;
+            }
+
+            if(user==''){
+                layer.open({
+                    title: '提示'
+                    ,content: '需求人不能为空'
+                });
+                return false;
+            }
+
+            if(!check.test(count)){
+                layer.open({
+                    title: '提示'
+                    ,content: '入库数要填写非负数字'
+                });
+                return false;
+            }
+            $.ajax({
+                url: 'file/storage',
+                type:'post',
+                data: {"desc_wz":desc_wz,"desc_pro":desc_pro,"user":user,"stock":stock,"count":count},
+                success: function(result){
+                    result = eval("("+result+")");
+                    if(result.code==0){
+                        research();
+                        layer.alert('操作完成', function(index){
+                            layer.close(index_3);
+                            layer.close(index);
+                        });
+                    }else{
+                        layer.open({
+                            title: '提示'
+                            ,content: '操作出错，请重试'
+                        });
+                    }
+                }
+            });
+        }
+        //----------------------------------------------------------------------
+
+        //---------------------领用------------------------------
+        function use(info){
+            $("#desc_wz_use").html(info.WZ_NAME);
+            $("#stock_use").html(info.WZ_STOCK);
+
+            index_2 = layer.open({
+                type: 1,
+                skin: 'layui-layer-demo', //样式类名
+                title: '物资领用',
+                closeBtn: 1,
+                anim: 2,
+                area: ['600px', '350px'],
+                shadeClose: false, //开启遮罩关闭
+                content: $("#wz_use").html()
+            });
+
+            //根据物资描述获取项目
+            $.ajax({
+                url: 'query/queryAllProject',
+                type: 'post',
+                data: {'desc_wz':info.WZ_NAME},
+                success: function (result) {
+                    projectArr = [];
+                    var data = JSON.parse(result).data;
+                    $.each(data,function(i,o){
+                        projectArr.push(o.PROJECT_NAME);
+                    });
+
+                    //初始化下拉框的值
+                    $.each(projectArr,function(i,o){
+                        var option = "<option value='"+o+"'>"+o+"</option>";
+                        $(".desc_pro_use_select").eq(1).append(option);
+                    });
+                }
+            })
+
+            //给领用的单选按钮绑定点击事件
+            $("input[type='radio'][name='choose_type_use']").each(function(){
+                $(this).click(function(){
+                    var choose_type = $(this).val();
+                    if(choose_type==1){
+                        $(".type_select_use:eq(1)").show();
+                        $(".type_input_use:eq(1)").hide();
+                    }else{
+                        $(".type_select_use:eq(1)").hide();
+                        $(".type_input_use:eq(1)").show();
+                    }
+                });
+            });
+        }
+        //提交入库数据
+        function submitUse(){
+            var desc_wz = $("#desc_wz_use").text();
+            var desc_pro;
+            var user =  $(".user_use").eq(1).val();
+            var stock =  $("#stock_use").text();
+            var count =  $(".count_use").eq(1).val();
+
+            var choose_type = $("input[type='radio'][name='choose_type_use']:checked").val();
+            if(choose_type==1){//下拉框
+                desc_pro =  $(".desc_pro_use_select:eq(1)").val();
+            }else{//输入框
+                desc_pro =  $(".desc_pro_use_input").eq(1).val();
+            }
+
+            if(desc_pro==''){
+                layer.open({
+                    title: '提示'
+                    ,content: '项目不能为空'
+                });
+                return false;
+            }
+
+            if(user==''){
+                layer.open({
+                    title: '提示'
+                    ,content: '领用人不能为空'
+                });
+                return false;
+            }
+
+            if(!check.test(count)){
+                layer.open({
+                    title: '提示'
+                    ,content: '领用数量要填写非负数字'
+                });
+                return false;
+            }
+
+            if(parseInt(stock)<parseInt(count)){
+                alert("领用数量超出库存");
+                return false;
+            }
+            $.ajax({
+                url: 'file/wz_use',
+                type:'post',
+                data: {"desc_wz":desc_wz,"desc_pro":desc_pro,"user":user,"stock":stock,"count":count},
+                success: function(result){
+                    result = eval("("+result+")");
+                    if(result.code==0){
+                        research();
+                        layer.alert('操作完成', function(index){
+                            layer.close(index_2);
+                            layer.close(index);
+                        });
+                    }else{
+                        layer.open({
+                            title: '提示'
+                            ,content: '操作出错，请重试'
+                        });
+                    }
+                }
+            });
+        }
+        //----------------------------------------------------------------------
+        //---------------------重复利用------------------------------
+        function repeat(info){
+            $("#desc_wz_repeat").html(info.WZ_NAME);
+            $("#stock_repeat").html(info.WZ_STOCK);
+
+            index_1= layer.open({
+                type: 1,
+                skin: 'layui-layer-demo', //样式类名
+                title: '重复利用',
+                closeBtn: 1,
+                anim: 2,
+                area: ['600px', '350px'],
+                shadeClose: false, //开启遮罩关闭
+                content: $("#repeat_use").html()
+            });
+
+            //根据物资描述获取项目
+            $.ajax({
+                url: 'query/queryAllProject',
+                type: 'post',
+                data: {'desc_wz':info.WZ_NAME},
+                success: function (result) {
+                    projectArr = [];
+                    var data = JSON.parse(result).data;
+                    $.each(data,function(i,o){
+                        projectArr.push(o.PROJECT_NAME);
+                    });
+
+                    //初始化下拉框的值
+                    $.each(projectArr,function(i,o){
+                        var option = "<option value='"+o+"'>"+o+"</option>";
+                        $(".desc_pro_repeat_select").eq(1).append(option);
+                    });
+                }
+            })
+
+            //给领用的单选按钮绑定点击事件
+            $("input[type='radio'][name='choose_type_repeat']").each(function(){
+                $(this).click(function(){
+                    var choose_type = $(this).val();
+                    if(choose_type==1){
+                        $(".type_select_repeat:eq(1)").show();
+                        $(".type_input_repeat:eq(1)").hide();
+                    }else{
+                        $(".type_select_repeat:eq(1)").hide();
+                        $(".type_input_repeat:eq(1)").show();
+                    }
+                });
+            });
+        }
+        //提交入库数据
+        function submitRepeat(){
+            var desc_wz = $("#desc_wz_repeat").text();
+            var stock_repeat = $("#stock_repeat").text();
+            var desc_pro;
+            var user =  $(".user_repeat").eq(1).val();
+            var count =  $(".count_repeat").eq(1).val();
+
+            var choose_type = $("input[type='radio'][name='choose_type_repeat']:checked").val();
+            if(choose_type==1){//下拉框
+                desc_pro =  $(".desc_pro_repeat_select:eq(1)").val();
+            }else{//输入框
+                desc_pro =  $(".desc_pro_repeat_input").eq(1).val();
+            }
+
+            if(desc_pro==''){
+                layer.open({
+                    title: '提示'
+                    ,content: '项目不能为空'
+                });
+                return false;
+            }
+
+            if(user==''){
+                layer.open({
+                    title: '提示'
+                    ,content: '领用人不能为空'
+                });
+                return false;
+            }
+
+            if(!check.test(count)){
+                layer.open({
+                    title: '提示'
+                    ,content: '数量要填写非负数字'
+                });
+                return false;
+            }
+
+            $.ajax({
+                url: 'file/repeat_use',
+                type:'post',
+                data: {"desc_wz":desc_wz,"desc_pro":desc_pro,"user":user,"count":count,"stock":stock_repeat},
+                success: function(result){
+                    result = eval("("+result+")");
+                    if(result.code==0){
+                        research();
+                        layer.alert('操作完成', function(index){
+                            layer.close(index_1);
+                            layer.close(index);
+                        });
+                    }else{
+                        layer.open({
+                            title: '提示'
+                            ,content: '操作出错，请重试'
+                        });
+                    }
+                }
+            });
+        }
+        //----------------------------------------------------------------------
+
+        function showdetail(info){
+            wz_name = info.WZ_NAME;
+            layer.open({
+                type: 2,
+                skin: 'layui-layer-demo', //样式类名
+                title:'物料库存变动明',
+                closeBtn: 1,
+                anim: 2,
+                area: ['1400px', '650px'],
+                shadeClose: false, //开启遮罩关闭
+                // content: './detailByWz'+encodeURIComponent(encodeURIComponent(info.WZ_NAME))
+                content: './detailByWz'
+            });
+        }
+
+        function downExcelModel(flag){
+            window.location.href="download/downExcelModel?flag="+flag;
+        }
+
+        function closeFrame(flag){
+            if(flag == 'index_storage'){
+                layer.close(index_storage);
+            }else{
+                layer.close(index_use);
+            }
+        }
+    </script>
+
+</body>
+</html>

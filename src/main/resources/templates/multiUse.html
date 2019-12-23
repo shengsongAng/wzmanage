@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>批量领用</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="stylesheet" href="layui/css/layui.css"  media="all">
+  
+	<style>
+		.layui-input,.layui-btn{
+			height:25px;
+			line-height:25px;
+		}
+        .btn{
+            background:#00837E;
+            border-radius:2px;
+            color:#fff;
+            display:inline-block;
+            text-align:center;
+            text-decoration:none;
+            width:57px;
+            height:28px;
+            line-height:28px;
+            margin-left:10px;
+        }
+        .btn:hover {
+            background:#3AAB9C;
+        }
+        a{
+            margin-right: 10px;
+        }
+	</style>
+
+</head>
+
+<body>
+    <div style="margin-left: 20px;" class="layui-upload">
+        excel附件：
+        <input type="text" id="filename" readonly="true" class="layui-input" style="width:300px;display:inline;margin:10px 0 0 0">
+        <button type="button" class="layui-btn" id="test8">选择</button>
+        <button type="button" class="layui-btn" id="test9">导入</button>
+    </div>
+
+    <div style="margin-left: 30px;" id="tip"></div>
+
+    <div class="layui-form" style="margin:10px">
+        <table class="layui-table">
+            <colgroup>
+                <col width="10">
+                <col width="260">
+                <col width="90">
+                <col width="120">
+                <col width="400">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>物资描述</th>
+                    <th>当前库存数</th>
+                    <th>本次领用数</th>
+                    <th>校验结果</th>
+                </tr>
+            </thead>
+            <tbody id="validRes">
+
+            </tbody>
+        </table>
+    </div>
+    <div style="float:right;">
+        <div id="pageBar" style="display: inline-block"></div>
+        <a href="javascript:void(0);" id="commitBtn" class="btn"  onclick="commitForm();">提交</a>
+    </div>
+          
+    <script src="layui/layui.js" charset="utf-8"></script>
+    <script src="js/jquery-3.4.1.min.js" charset="utf-8"></script>
+    <!-- 注意：如果你直接复制所有代码到本地，上述js路径需要改成你本地的 -->
+    <script>
+        //存放所有的数据，假分页用到
+        var dataArr = new Array();
+        var pageSize = 15;
+        var total = 0;
+        var begin = 0;
+        //后台保存的文件名，提交的时候，后台从该文件中获得数据，无需重新上传Excel
+        var fileName = "";
+        var index_load;
+
+        //渲染文件上传组件
+        layui.use(['laypage', 'layer','upload'], function(){
+          var $ = layui.jquery
+          ,upload = layui.upload
+          ,laypage= layui.laypage;
+
+          //选完文件后不自动上传
+          upload.render({
+            elem: '#test8'
+            ,url: 'file/uploadFile_use'
+            ,auto: false
+            ,accept: 'file' //普通文件
+            ,exts: 'xls|xlsx' //只允许上传压缩文件
+            //,size: 60 //限制文件大小，单位 KB
+            //,multiple: true
+            ,bindAction: '#test9'
+            ,before:function(obj){
+                  index_load = layer.load(1, {
+                      shade: [0.1,'#fff'] //0.1透明度的白色背景
+                  });
+             }
+            ,choose: function(obj){
+              obj.preview(function(index,file,result){
+                var filename = file.name;
+                $("#filename").val(filename);
+              });
+            }
+            ,done: function(res){
+                  //关闭弹窗
+                layer.close(index_load);
+              if(res.code==-1){//excel文件有问题
+                  layer.open({
+                      title: '提示'
+                      ,content: res.msg
+                  });
+              }else{//文件验证结果
+                  var tip = "导入结果：共导入"+res.total+"条记录，失败<font color='red'>"+res.failTotal+"</font>条";
+                  $("#tip").html(tip);
+                  var arr = res.data;
+                  fileName = res.fileName;
+                  dataArr = arr;
+                  total = arr.length;
+                  //展示分页
+                  showPageBar();
+                  //展示结果
+                  showRes(1);
+              }
+
+            }
+          });
+
+          //展示分页
+            function showPageBar(){
+                laypage.render({
+                    elem: 'pageBar'
+                    ,count: total //数据总数
+                    ,limit: pageSize //每页数据量
+                    ,jump: function(obj){
+                        //点击分页按钮
+                        showRes(obj.curr);
+                    }
+                });
+            }
+
+        });
+
+        //分页展示数据,page:当前页数
+        function showRes(page){
+            begin = (page-1) * pageSize;
+            var arr = dataArr.slice(begin,begin + pageSize);
+            var html = "";
+            $.each(arr,function(i,obj){
+                html += "<tr>";
+                    html += "<td>"+ (i+1) +"</td>";
+                    html += "<td>"+ obj.name +"</td>";
+                    html += "<td>"+ obj.currCount +"</td>";
+                    html += "<td>"+ obj.thisCount +"</td>";
+                    if(obj.validRes == "success"){
+                        html += "<td><font color='green'>成功</font></td>";
+                    }else{
+                        html += "<td><font color='red'>"+ obj.validRes +"</font></td>";
+                    }
+                html += "</tr>";
+            });
+            $("#validRes").html(html);
+        }
+
+        //提交数据，开始存库
+        function commitForm(){
+            if(dataArr.length==0 || fileName==""){
+                layer.open({
+                    title: '提示'
+                    ,content: '请先上传文件，并且等待校验完成'
+                });
+                return false;
+            }
+            var index_load_1 = layer.load(1, {
+                shade: [0.1,'#fff'] //0.1透明度的白色背景
+            });
+            $.ajax({
+                url: 'file/importData_use',
+                type:'post',
+                data: {"fileName":fileName},
+                success: function(result){
+                    //关闭弹窗
+                    layer.close(index_load_1);
+                    result = eval("("+result+")");
+                    if(result.code==0){
+                        parent.research();
+                        layer.alert('提交完成', function(index){
+                            parent.closeFrame("index_use");
+                            layer.close(index);
+                        });
+                    }else{
+                        layer.open({
+                            title: '提示'
+                            ,content: '提交出错，请重试'
+                        });
+                    }
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
